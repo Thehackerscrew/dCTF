@@ -1192,5 +1192,3 @@ On changing auth from `0` to `1` and sending the request, you will get the flag.
 $ curl "http://dctf1-chall-simple-web.westeurope.azurecontainer.io:8080/flag" --data "flag=1&auth=1&Submit=Submit"
 There you go: dctf{w3b_c4n_b3_fun_r1ght?}
 ```
-
-On changing auth from `0` to `1` and sending the request, you will get the flag.
