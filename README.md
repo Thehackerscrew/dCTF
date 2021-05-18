@@ -25,7 +25,8 @@
     - [3.1 DevOps vs SecOps](#31-devops-vs-secops)
     - [3.2 Simple Web](#32-simple-web)
 - [4. Reverse Engineering](#4-Reverse-Engineering)
-    - [4.1 Bell](#3.1-bell)
+    - [4.1 Bell](#41-bell)
+    - [4.2 Just In Time](#42-just-in-time)
 
 # 1. MISC
 #### 1.1 Encrypted Flag I Have
@@ -1398,3 +1399,71 @@ Gotcha!, it tried to open `flag.txt` means It cleared the tests, now I just had 
 Here is how it looks like:    
 
 <img src="https://i.ibb.co/0q35ZZy/image.png" alt="image" border="0">
+
+### 4.2 Just In Time
+
+<img src="https://i.ibb.co/zQXB42Y/image.png" alt="image" border="0">
+
+
+I downloaded the file and ran it, it looked like this:
+
+```bash
+➜  JIT_ ./JIT
+Decryption finished.
+```
+
+It just printed `Decryption finished.` and closed. The thing that everyone in the world does when they get a ELF binary is running `ltrace` and `strace` to see what's going on, and in some UNEXPECTED times you the flag there for a 300 POINTS **Reverse Engineering** challenge like most of the people got in this one.
+
+
+```c
+➜  JIT_ ltrace ./JIT
+malloc(8)                                                               = 0x55f44ff2d2a0
+malloc(8)                                                               = 0x55f44ff2d2c0
+fopen("./JIT", "rb")                                                    = 0x55f44ff2d2e0
+fread(0x55f44ff2d2c0, 8, 1, 0x55f44ff2d2e0)                             = 1
+fclose(0x55f44ff2d2e0)                                                  = 0
+strncpy(0x55f44ff2d2a0, "\177ELF\002\001\001", 8)                       = 0x55f44ff2d2a0
+malloc(39)                                                              = 0x55f44ff2d4c0
+strncpy(0x55f44ff2d4c0, "\033&8 yegHr($g1bKu{"f5`N}t#331Nv/%"..., 39)   = 0x55f44ff2d4c0
+strlen("\033&8 yegHr($g1bKu{"f5`N}t#331Nv/%"...)                        = 38
+puts("Decryption finished."Decryption finished.
+)                                            = 21
+malloc(39)                                                              = 0x55f44ff2d900
+malloc(40)                                                              = 0x55f44ff2d930
+strncpy(0x55f44ff2d900, "dctf{df77dbe0c407dd4a188e12013cc"..., 39)      = 0x55f44ff2d900
+malloc(40)                                                              = 0x55f44ff2d960
+strlen("\033&8 yegHr($g1bKu{\"f5`N}t#331Nv/%"...)                        = 38
+free(0x55f44ff2d4c0)                                                    = <void>
+free(0x55f44ff2d960)                                                    = <void>
+free(0x55f44ff2d2a0)                                                    = <void>
++++ exited (status 0) +++
+```
+
+
+The string wasn't fully visible due to the string display limit of ltrace which can be changed with the `-s` switch, running `ltrace -s 40`.
+
+```c
+➜  JIT_ ltrace -s 40 ./JIT
+malloc(8)                                                               = 0x5589b89612a0
+malloc(8)                                                               = 0x5589b89612c0
+fopen("./JIT", "rb")                                                    = 0x5589b89612e0
+fread(0x5589b89612c0, 8, 1, 0x5589b89612e0)                             = 1
+fclose(0x5589b89612e0)                                                  = 0
+strncpy(0x5589b89612a0, "\177ELF\002\001\001", 8)                       = 0x5589b89612a0
+malloc(39)                                                              = 0x5589b89614c0
+strncpy(0x5589b89614c0, "\033&8 yegHr($g1bKu{"f5`N}t#331Nv/%`11F#1", 39) = 0x5589b89614c0
+strlen("\033&8 yegHr($g1bKu{"f5`N}t#331Nv/%`11F#1")                     = 38
+puts("Decryption finished."Decryption finished.
+)                                            = 21
+malloc(39)                                                              = 0x5589b8961900
+malloc(40)                                                              = 0x5589b8961930
+strncpy(0x5589b8961900, "dctf{df77dbe0c407dd4a188e12013ccb009f}", 39)   = 0x5589b8961900
+malloc(40)                                                              = 0x5589b8961960
+strlen("\033&8 yegHr($g1bKu{"f5`N}t#331Nv/%`11F#1")                     = 38
+free(0x5589b89614c0)                                                    = <void>
+free(0x5589b8961960)                                                    = <void>
+free(0x5589b89612a0)                                                    = <void>
++++ exited (status 0) +++
+```
+
+AND BOOM WE GOT 300 POINTS!
