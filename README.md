@@ -25,8 +25,8 @@
     - [3.1 DevOps vs SecOps](#31-devops-vs-secops)
     - [3.2 Simple Web](#32-simple-web)
 - [4. Reverse Engineering](#4-Reverse-Engineering)
-    - [4.1 Bell](#4.1-bell)
-    - [4.2 Just In Time](#4.2-just-in-time)
+    - [4.1 Bell](#41-bell)
+    - [4.2 Just In Time](#42-just-in-time)
 
 # 1. MISC
 #### 1.1 Encrypted Flag I Have
