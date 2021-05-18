@@ -24,6 +24,8 @@
 - [3. Web](#3-web)
     - [3.1 DevOps vs SecOps](#31-devops-vs-secops)
     - [3.2 Simple Web](#32-simple-web)
+- [4. Reverse Engineering](#4-Reverse-Engineering)
+    - [4.1 Bell](#3.1-bell)
 
 # 1. MISC
 #### 1.1 Encrypted Flag I Have
@@ -1192,3 +1194,207 @@ On changing auth from `0` to `1` and sending the request, you will get the flag.
 $ curl "http://dctf1-chall-simple-web.westeurope.azurecontainer.io:8080/flag" --data "flag=1&auth=1&Submit=Submit"
 There you go: dctf{w3b_c4n_b3_fun_r1ght?}
 ```
+
+# 4. Reverse Engineering
+#### 4.1 Bell
+The challenge description looked like this:    
+
+<img src="https://i.ibb.co/rvGQkkQ/image.png" alt="image" border="0">
+
+I started the challenge by downloading the file and running the `file` command to see some information of the file. The result of file command looked like this:    
+<img src="https://i.ibb.co/6g6dqZH/image.png" alt="image" border="0">
+
+So, this is an ELF 64-bit executable for x86-64 systems and dynamically linked and also not stripped, this shows that the file isn't going to require any extra efforts to reverse engineer.
+Running the file, show this:    
+
+<img src="https://i.ibb.co/80q0hqH/image.png" alt="image" border="0">
+
+It printed a number and then it was waiting for input, doesn't makes much sense. I looked at the assembly of this file in rizin and tried to understand what's going on.
+Opening the binary in rizin with `rizin -d -A bell`, then looking all the functions with `afl` command looked like this:    
+
+<img src="https://i.ibb.co/tzJHJ3j/image.png" alt="image" border="0">
+
+Looks like we didn't got many functions to deal with, the challenge might be easy.
+Looking closely at this functions gave me a hint that this program might be generating some random numbers by taking the result of the `time` function as a seed to `srand` function.    
+
+<img src="https://i.ibb.co/Sy0xppw/image.png" alt="image" border="0">
+
+Now, let's look into the disassembly of the main function by using the command `pdf`.    
+
+<img src="https://i.ibb.co/pvhyRD7/image.png" alt="image" border="0">
+
+My assumption was true that it is taking the result of time function with was **called without any parameters (as 0 was passed into `rdi`)** as a seed to `srand` function, then `rand` function is called and then some mathematical operations are going on then `printf` is called prints the number that we saw when we ran the binary, in the end after `printf`, `process` function is called.
+Let's look at the disassembly of `process` function by using the command `pdf @sym.process`:
+
+```wasm
+[0x55853a1629a9]> pdf @sym.process
+            ; CALL XREF from main @ 0x55853a162a07
+┌ sym.process (int64_t arg1);
+│           ; var int64_t var_24h @ rbp-0x24
+│           ; var int64_t var_20h @ rbp-0x20
+│           ; var int64_t var_1ch @ rbp-0x1c
+│           ; var int64_t var_18h @ rbp-0x18
+│           ; var int64_t var_10h @ rbp-0x10
+│           ; var int64_t var_8h @ rbp-0x8
+│           ; arg int64_t arg1 @ rdi
+│           0x55853a1628fc      push  rbp
+│           0x55853a1628fd      mov   rbp, rsp
+│           0x55853a162900      sub   rsp, 0x30
+│           0x55853a162904      mov   dword [var_24h], edi             ; arg1
+│           0x55853a162907      mov   rax, qword fs:[0x28]
+│           0x55853a162910      mov   qword [var_8h], rax
+│           0x55853a162914      xor   eax, eax
+│           0x55853a162916      mov   dword [var_20h], 1
+│           0x55853a16291d      mov   dword [var_1ch], 1
+│       ┌─< 0x55853a162924      jmp   0x55853a162966
+│      ┌──> 0x55853a162926      mov   edx, dword [var_1ch]
+│      ╎│   0x55853a162929      mov   eax, dword [var_24h]
+│      ╎│   0x55853a16292c      mov   esi, edx
+│      ╎│   0x55853a16292e      mov   edi, eax
+│      ╎│   0x55853a162930      call  sym.triangle
+│      ╎│   0x55853a162935      mov   qword [var_10h], rax
+│      ╎│   0x55853a162939      lea   rax, [var_18h]
+│      ╎│   0x55853a16293d      mov   rsi, rax
+│      ╎│   0x55853a162940      lea   rdi, [0x55853a162aa4]            ; "%ld"
+│      ╎│   0x55853a162947      mov   eax, 0
+│      ╎│   0x55853a16294c      call  sym.imp.__isoc99_scanf           ; int scanf(const char *format)
+│      ╎│   0x55853a162951      mov   rax, qword [var_18h]
+│      ╎│   0x55853a162955      cmp   qword [var_10h], rax
+│     ┌───< 0x55853a162959      je    0x55853a162962
+│     │╎│   0x55853a16295b      mov   dword [var_20h], 0
+│     └───> 0x55853a162962      add   dword [var_1ch], 1
+│      ╎│   ; CODE XREF from sym.process @ 0x55853a162924
+│      ╎└─> 0x55853a162966      mov   eax, dword [var_1ch]
+│      ╎    0x55853a162969      cmp   eax, dword [var_24h]
+│      └──< 0x55853a16296c      jle   0x55853a162926
+│           0x55853a16296e      cmp   dword [var_20h], 1
+│       ┌─< 0x55853a162972      jne   0x55853a162982
+│       │   0x55853a162974      lea   rdi, str.cat_flag.txt            ; 0x55853a162aa8 ; "cat flag.txt"
+│       │   0x55853a16297b      call  sym.imp.system                   ; int system(const char *string)
+│      ┌──< 0x55853a162980      jmp   0x55853a16298e
+│      │└─> 0x55853a162982      lea   rdi, str.Better_luck_next_time.  ; 0x55853a162ab5 ; "Better luck next time."
+│      │    0x55853a162989      call  sym.imp.puts                     ; int puts(const char *s)
+│      │    ; CODE XREF from sym.process @ 0x55853a162980
+│      └──> 0x55853a16298e      mov   eax, 0
+│           0x55853a162993      mov   rcx, qword [var_8h]
+│           0x55853a162997      xor   rcx, qword fs:[0x28]
+│       ┌─< 0x55853a1629a0      je    0x55853a1629a7
+│       │   0x55853a1629a2      call  sym.imp.__stack_chk_fail         ; void __stack_chk_fail(void)
+│       └─> 0x55853a1629a7      leave
+└           0x55853a1629a8      ret
+[0x55853a1629a9]>
+```
+
+So again, this function is performing some operations in a loop and calling another function `triangle`. It isn't a good idea to spend time on understanding assembly for hours in a live CTF, so I opened the binary in IDA Pro and the disassembly of `main` function looked like this:
+
+```c
+int __cdecl main(int argc,
+    const char ** argv,
+        const char ** envp) {
+    int current_time; // eax
+    unsigned int rand_num; // [rsp+Ch] [rbp-4h]
+
+    current_time = time(0 LL); // getting the current time since UTC 00:00:00, JAN 1, 1970 in seconds
+    srand(current_time); // using the result of time function to set seed for rand function.
+    rand_num = rand() % 5 + 8; // adding 8 to the result returned by the remainder of random number divided by 5.
+    printf("%d\n", rand_num); // printing the random number.
+    process(rand_num); // called the process function with rand_num variable as a parameter. 
+    return 0;
+}
+```
+
+The comments are written by me and the variables are also renamed by me not IDA :x, but we are more interested in the `process` function, it's disassembly looked like this:
+
+```c
+__int64 __fastcall process(int argument_1)
+{
+  int won; 
+  int i;
+  __int64 our_input;
+  __int64 triangle_result;
+  unsigned __int64 v6;
+
+  v6 = __readfsqword(0x28u);
+  won = 1;
+	
+	// looping argument_1 (the random number that was passed in) times
+  for ( i = 1; i <= argument_1; ++i )
+  {
+    triangle_result = triangle(argument_1, i);
+    scanf(&unk_AA4, &our_input);
+    if ( triangle_result != our_input )
+      won = 0; 
+  }
+
+  if ( won == 1 )
+    system("cat flag.txt");
+  else
+    puts("Better luck next time.");
+  return 0LL;
+}
+```
+
+If you know C, you would have recognised the code and it's pretty straight-forward, it is first looping the `argument_1` times and calling the `triangle` function with argument one and the loop counter, and then asking for input then checking if the result from the `triangle` function is not equal to `our_input`, if it's not equal then it will set won to 0 (**which is set to 1 by default**) and at last the function if checking `won` is equal to 1, if it's then it will print the flag else we won't get the flag.
+So, the only thing left is to reverse engineer the `triangle` function and find out what it's doing and then make a script that can automate this for us. The C pseudocode of `triangle` function looked like this:
+
+```c
+__int64 __fastcall triangle(unsigned int argument_1, int argument_2)
+{
+  __int64 v3; // rbx
+
+  if ( argument_2 > (int)argument_1 )
+    return 0LL;
+  if ( argument_1 == 1 && argument_2 == 1 )
+    return 1LL;
+  if ( argument_2 == 1 )
+    return triangle(argument_1 - 1, argument_1 - 1);
+  v3 = triangle(argument_1, argument_2 - 1);
+  return v3 + triangle(argument_1 - 1, argument_2 - 1);
+}
+```
+
+This looked very straight-forward to me, it's just doing some checks and returning 0 or 1 on the basis of the results of this function, I made a same function in a c program to print the numbers in a loop that this function was producing, the c program looked like this:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int triangle(int a1, int a2){
+  int v3;
+
+  if ( a2 > (int)a1 )
+    return 0;
+  if ( a1 == 1 && a2 == 1 )
+    return 1;
+  if ( a2 == 1 )
+    return triangle(a1 - 1, a1 - 1);
+  v3 = triangle(a1, a2 - 1);
+  return v3 + triangle(a1 - 1, a2 - 1);
+
+}
+
+int main(int argc, char* argv[]){
+    int arg = strtol(argv[1], NULL, 10); // converting the argv[1] into an integer
+    for (int i=1; i <= arg; i++)
+    {
+      printf("%d\n", triangle(arg, i));
+    }
+}
+```
+
+Now, I just had to supply this c program the number returned by the binary and it will return the number sequence required by the binary to print the flag. Let's run the binary and test this.    
+
+<img src="https://i.ibb.co/HrkXjGY/image.png" alt="image" border="0">
+
+So, I passed 11 to the C program and got the sequence!    
+
+<img src="https://i.ibb.co/pxqXcpZ/image.png" alt="image" border="0">
+
+I then supplied this to the binary:    
+
+<img src="https://i.ibb.co/fGhgJRX/image.png" alt="image" border="0">
+
+Gotcha!, it tried to open `flag.txt` means It cleared the tests, now I just had to try it on the netcat server.
+Here is how it looks like:    
+
+<img src="https://i.ibb.co/0q35ZZy/image.png" alt="image" border="0">
