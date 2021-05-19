@@ -1479,16 +1479,6 @@ AND BOOM WE GOT 300 POINTS!
 
 
 # 5 Pwn
-- [5. Pwn](#5-Pwn)
-    - [5.1 PWN Sanity check](#51-PWN-Sanity-check)
-    - [5.2 Pinch](#52-Pinch)
-    - [5.3 Readme](#53-Readme)
-    - [5.4 Baby BOF](#54-Baby-BOF)
-    - [5.5 Magic trick](#55-Magic-trick)
-    - [5.6 Hotel ROP](#56-Hotel-ROP)
-    - [5.7 Formats last theorem](#57-Formats-last-theorem)
-    - [5.8 Just another heap](#58-Just-another-heap)
-    - 
 #### [5.1 PWN Sanity check](./PWN%20sanity%20check/README.md)
 #### [5.2 Pinch](./Pinch/README.md)
 #### [5.3 Readme](./Readme/README.md)
