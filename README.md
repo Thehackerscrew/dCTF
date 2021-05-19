@@ -27,6 +27,15 @@
 - [4. Reverse Engineering](#4-Reverse-Engineering)
     - [4.1 Bell](#41-bell)
     - [4.2 Just In Time](#42-just-in-time)
+- [5. Pwn](#5-Pwn)
+    - [5.1 PWN Sanity check](#51-PWN-Sanity-check)
+    - [5.2 Pinch](#52-Pinch)
+    - [5.3 Readme](#53-Readme)
+    - [5.4 Baby BOF](#54-Baby-BOF)
+    - [5.5 Magic trick](#55-Magic-trick)
+    - [5.6 Hotel ROP](#56-Hotel-ROP)
+    - [5.7 Formats last theorem](#57-Formats-last-theorem)
+    - [5.8 Just another heap](#58-Just-another-heap)
 
 # 1. MISC
 #### 1.1 Encrypted Flag I Have
@@ -1467,3 +1476,15 @@ free(0x5589b89612a0)                                                    = <void>
 ```
 
 AND BOOM WE GOT 300 POINTS!
+
+
+# 5 Pwn
+
+#### [5.1 PWN Sanity check](./PWN sanity check/README.md)
+#### [5.2 Pinch](./Pinch/README.md)
+#### [5.3 Readme](./Readme/README.md)
+#### [5.4 Baby BOF](./Baby_bof/README.md)
+#### [5.5 Magic trick](./Magic trick/README.md)
+#### [5.6 Hotel ROP](./Hotel ROP/README.md)
+#### [5.7 Formats last theorem](./Formats last theorem/README.md)
+#### [5.8 Just another heap](./Just Another Heap/README.md)
